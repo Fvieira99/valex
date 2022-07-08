@@ -4,8 +4,13 @@ import { Request, Response } from "express";
 const messageToStatusCode = {
   unauthorized: 401,
   not_found: 404,
-  conflict: 409
+  conflict: 409,
+  forbidden: 403
 };
+
+export function forbiddenError() {
+  return { type: "forbidden" };
+}
 
 export function conflictError() {
   return { type: "conflict" };

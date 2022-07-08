@@ -11,7 +11,19 @@ export async function createCard(req: Request, res: Response) {
 
   const fullName = await employeeService.checkIfEmployeeExists(employeeId);
   await cardsService.checkIfEmployeeHasCardType(employeeId, cardType);
-  const cardInfos = await cardsService.createCard(fullName);
+  await cardsService.createCard(fullName, cardType, employeeId);
+  res.sendStatus(201);
+}
 
-  // console.log(cardInfos);
+export async function activateCard(req: Request, res: Response) {
+  const { cardId, inputSecurityCode, password } = req.body;
+
+  const card = await cardsService.checkIfCardIsAbleToActivate(cardId);
+  await cardsService.activateCard(
+    card.securityCode,
+    inputSecurityCode,
+    password,
+    cardId
+  );
+  res.sendStatus(200);
 }
