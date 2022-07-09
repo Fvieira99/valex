@@ -39,7 +39,7 @@ export async function createCard(
   const cardNumber = generateCardNumber();
   const cardholderName = formatCardHolderName(fullName);
   const expirationDate = generateFormatedExpirationDate();
-  const securityCode = generateCardSecurityCode();
+  const securityCode = encryptCardSecurityCode();
 
   const newCardData = {
     employeeId,
@@ -57,7 +57,10 @@ export async function createCard(
   await cardRepository.insert(newCardData);
 }
 
-export async function checkIfCardIsAbleToActivate(cardId: number) {
+export async function checkIfCardIsAbleToActivate(
+  cardId: number,
+  employeeId: number
+) {
   const card = await cardRepository.findById(cardId);
 
   if (!card) {
@@ -72,6 +75,9 @@ export async function checkIfCardIsAbleToActivate(cardId: number) {
     throw badRequestError();
   }
 
+  if (card.employeeId !== employeeId) {
+    throw unauthorizedError();
+  }
   return card;
 }
 
@@ -95,7 +101,10 @@ export async function activateCard(
   await cardRepository.update(cardId, updatedCardData);
 }
 
-export async function checkCardBlockPossibility(cardId: number) {
+export async function checkCardBlockPossibility(
+  cardId: number,
+  employeeId: number
+) {
   const card = await cardRepository.findById(cardId);
 
   if (!card) {
@@ -109,10 +118,17 @@ export async function checkCardBlockPossibility(cardId: number) {
   if (card.isBlocked) {
     throw badRequestError();
   }
+
+  if (card.employeeId !== employeeId) {
+    throw unauthorizedError();
+  }
   return { isBlockedStatus: card.isBlocked, hashedPassword: card.password };
 }
 
-export async function checkCardUnblockPossibility(cardId: number) {
+export async function checkCardUnblockPossibility(
+  cardId: number,
+  employeeId: number
+) {
   const card = await cardRepository.findById(cardId);
   if (!card) {
     throw notFoundError();
@@ -124,6 +140,9 @@ export async function checkCardUnblockPossibility(cardId: number) {
 
   if (!card.isBlocked) {
     throw badRequestError();
+  }
+  if (card.employeeId !== employeeId) {
+    throw unauthorizedError();
   }
 
   return { isBlockedStatus: card.isBlocked, hashedPassword: card.password };
@@ -177,7 +196,7 @@ function generateFormatedExpirationDate(): string {
   return formatedExpirationDate;
 }
 
-function generateCardSecurityCode(): string {
+function encryptCardSecurityCode(): string {
   const securityCode = faker.finance.creditCardCVV();
   const encryptedSecurityCode = cryptr.encrypt(securityCode);
   return encryptedSecurityCode;
@@ -190,20 +209,9 @@ function calcExpirationDate(currentYear: string) {
 
 function isExpiredCard(expirationDate: string): boolean {
   const currentDate = dayjs().locale("pt-br").format("MM/YY");
-  const [currentMonth, currentYear] = currentDate
-    .split("/")
-    .map(date => parseInt(date));
-  const [expirationMonth, expirationYear] = expirationDate
-    .split("/")
-    .map(date => parseInt(date));
-
-  if (currentYear > expirationYear) {
-    return true;
-  } else if (currentMonth > expirationMonth && currentYear === expirationYear) {
-    return true;
-  } else {
-    return false;
-  }
+  const isExpired = dayjs(currentDate).isAfter(expirationDate);
+  console.log(isExpired);
+  return isExpired;
 }
 
 function hashPassword(password: string) {

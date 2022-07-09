@@ -10,19 +10,22 @@ export async function createCard(req: Request, res: Response) {
   }: { employeeId: number; cardType: TransactionTypes } = req.body;
   const apiKey = res.locals.apiKey;
 
-  const fullName = await employeeService.checkEmployeeAndCompany(
+  const fullEmployeeName = await employeeService.checkEmployeeAndCompany(
     employeeId,
     apiKey
   );
   await cardsService.checkIfEmployeeHasCardType(employeeId, cardType);
-  await cardsService.createCard(fullName, cardType, employeeId);
+  await cardsService.createCard(fullEmployeeName, cardType, employeeId);
   res.sendStatus(201);
 }
 
 export async function activateCard(req: Request, res: Response) {
-  const { cardId, inputSecurityCode, password } = req.body;
+  const { cardId, inputSecurityCode, password, employeeId } = req.body;
 
-  const card = await cardsService.checkIfCardIsAbleToActivate(cardId);
+  const card = await cardsService.checkIfCardIsAbleToActivate(
+    cardId,
+    employeeId
+  );
   await cardsService.activateCard(
     card.securityCode,
     inputSecurityCode,
@@ -33,10 +36,10 @@ export async function activateCard(req: Request, res: Response) {
 }
 
 export async function blockCard(req: Request, res: Response) {
-  const { cardId, password } = req.body;
+  const { cardId, password, employeeId } = req.body;
 
   const { isBlockedStatus, hashedPassword } =
-    await cardsService.checkCardBlockPossibility(cardId);
+    await cardsService.checkCardBlockPossibility(cardId, employeeId);
   await cardsService.toggleIsBlockedStatus(
     cardId,
     password,
@@ -48,10 +51,10 @@ export async function blockCard(req: Request, res: Response) {
 }
 
 export async function unblockCard(req: Request, res: Response) {
-  const { cardId, password } = req.body;
+  const { cardId, password, employeeId } = req.body;
 
   const { isBlockedStatus, hashedPassword } =
-    await cardsService.checkCardUnblockPossibility(cardId);
+    await cardsService.checkCardUnblockPossibility(cardId, employeeId);
   await cardsService.toggleIsBlockedStatus(
     cardId,
     password,
