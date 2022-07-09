@@ -8,8 +8,12 @@ export async function createCard(req: Request, res: Response) {
     employeeId,
     cardType
   }: { employeeId: number; cardType: TransactionTypes } = req.body;
+  const apiKey = res.locals.apiKey;
 
-  const fullName = await employeeService.checkIfEmployeeExists(employeeId);
+  const fullName = await employeeService.checkEmployeeAndCompany(
+    employeeId,
+    apiKey
+  );
   await cardsService.checkIfEmployeeHasCardType(employeeId, cardType);
   await cardsService.createCard(fullName, cardType, employeeId);
   res.sendStatus(201);
@@ -25,5 +29,35 @@ export async function activateCard(req: Request, res: Response) {
     password,
     cardId
   );
+  res.sendStatus(200);
+}
+
+export async function blockCard(req: Request, res: Response) {
+  const { cardId, password } = req.body;
+
+  const { isBlockedStatus, hashedPassword } =
+    await cardsService.checkCardBlockPossibility(cardId);
+  await cardsService.toggleIsBlockedStatus(
+    cardId,
+    password,
+    isBlockedStatus,
+    hashedPassword
+  );
+
+  res.sendStatus(200);
+}
+
+export async function unblockCard(req: Request, res: Response) {
+  const { cardId, password } = req.body;
+
+  const { isBlockedStatus, hashedPassword } =
+    await cardsService.checkCardUnblockPossibility(cardId);
+  await cardsService.toggleIsBlockedStatus(
+    cardId,
+    password,
+    isBlockedStatus,
+    hashedPassword
+  );
+
   res.sendStatus(200);
 }

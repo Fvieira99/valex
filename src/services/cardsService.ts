@@ -1,7 +1,9 @@
 import {
+  badRequestError,
   conflictError,
   forbiddenError,
-  notFoundError
+  notFoundError,
+  unauthorizedError
 } from "../middlewares/errorHandlerMiddleware.js";
 import * as cardRepository from "../repositories/cardRepository.js";
 import { faker } from "@faker-js/faker";
@@ -63,11 +65,11 @@ export async function checkIfCardIsAbleToActivate(cardId: number) {
   }
 
   if (isExpiredCard(card.expirationDate)) {
-    throw forbiddenError();
+    throw badRequestError();
   }
 
   if (card.password !== null) {
-    throw forbiddenError();
+    throw badRequestError();
   }
 
   return card;
@@ -93,8 +95,61 @@ export async function activateCard(
   await cardRepository.update(cardId, updatedCardData);
 }
 
+export async function checkCardBlockPossibility(cardId: number) {
+  const card = await cardRepository.findById(cardId);
+
+  if (!card) {
+    throw notFoundError();
+  }
+
+  if (isExpiredCard(card.expirationDate)) {
+    throw badRequestError();
+  }
+
+  if (card.isBlocked) {
+    throw badRequestError();
+  }
+  return { isBlockedStatus: card.isBlocked, hashedPassword: card.password };
+}
+
+export async function checkCardUnblockPossibility(cardId: number) {
+  const card = await cardRepository.findById(cardId);
+  if (!card) {
+    throw notFoundError();
+  }
+
+  if (isExpiredCard(card.expirationDate)) {
+    throw badRequestError();
+  }
+
+  if (!card.isBlocked) {
+    throw badRequestError();
+  }
+
+  return { isBlockedStatus: card.isBlocked, hashedPassword: card.password };
+}
+
+export async function toggleIsBlockedStatus(
+  cardId: number,
+  password: string,
+  isBlocked: boolean,
+  hashedPassword: string
+) {
+  if (!bcrypt.compareSync(password, hashedPassword)) {
+    throw unauthorizedError();
+  }
+  if (isBlocked) {
+    const updatedCardData = { isBlocked: false };
+    await cardRepository.update(cardId, updatedCardData);
+  } else if (!isBlocked) {
+    const updatedCardData = { isBlocked: true };
+    await cardRepository.update(cardId, updatedCardData);
+  }
+}
+
 function generateCardNumber(): string {
-  return faker.finance.creditCardNumber();
+  const number = faker.finance.creditCardNumber();
+  return number;
 }
 
 function formatCardHolderName(fullName: string): string {

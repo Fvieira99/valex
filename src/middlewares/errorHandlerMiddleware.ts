@@ -5,8 +5,13 @@ const messageToStatusCode = {
   unauthorized: 401,
   not_found: 404,
   conflict: 409,
-  forbidden: 403
+  forbidden: 403,
+  bad_request: 400
 };
+
+export function badRequestError() {
+  return { type: "bad_request" };
+}
 
 export function forbiddenError() {
   return { type: "forbidden" };
