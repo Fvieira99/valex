@@ -5,13 +5,16 @@ import {
   notFoundError,
   unauthorizedError
 } from "../middlewares/errorHandlerMiddleware.js";
-import * as cardRepository from "../repositories/cardRepository.js";
 import { faker } from "@faker-js/faker";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br.js";
 import Cryptr from "cryptr";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
+
+import * as cardRepository from "../repositories/cardRepository.js";
+import * as paymentRepository from "../repositories/paymentRepository.js";
+import * as rechargeRepository from "../repositories/rechargeRepository.js";
 
 dotenv.config();
 
@@ -56,43 +59,24 @@ export async function createCard(
 
   await cardRepository.insert(newCardData);
 }
-
-export async function checkIfCardIsAbleToActivate(
-  cardId: number,
-  employeeId: number
-) {
-  const card = await cardRepository.findById(cardId);
-
-  if (!card) {
-    throw notFoundError();
-  }
-
-  if (isExpiredCard(card.expirationDate)) {
-    throw badRequestError();
-  }
-
-  if (card.password !== null) {
-    throw badRequestError();
-  }
-
-  if (card.employeeId !== employeeId) {
-    throw unauthorizedError();
-  }
-  return card;
-}
-
 export async function activateCard(
-  cardSecurityCode: string,
+  inputPassword: string,
+  cardId: number,
   inputSecurityCode: string,
   cardPassword: string,
-  cardId: number
+  CardSecurityCode: string
 ) {
-  const decryptedSecurityCode = cryptr.decrypt(cardSecurityCode);
-  if (decryptedSecurityCode !== inputSecurityCode) {
-    throw forbiddenError();
+  if (cardPassword !== null) {
+    throw badRequestError();
   }
 
-  const hashedPassword = hashPassword(cardPassword);
+  const decryptedSecurityCode = cryptr.decrypt(CardSecurityCode);
+  // console.log(decryptedSecurityCode);
+  if (decryptedSecurityCode !== inputSecurityCode) {
+    throw unauthorizedError();
+  }
+
+  const hashedPassword = hashPassword(inputPassword);
 
   const updatedCardData = {
     password: hashedPassword
@@ -101,74 +85,100 @@ export async function activateCard(
   await cardRepository.update(cardId, updatedCardData);
 }
 
-export async function checkCardBlockPossibility(
+export async function blockCard(
   cardId: number,
-  employeeId: number
+  inputPassword: string,
+  isBlockedStatus: boolean,
+  cardPassword: string
 ) {
+  if (isBlockedStatus) {
+    throw badRequestError();
+  }
+
+  if (!bcrypt.compareSync(inputPassword, cardPassword)) {
+    throw unauthorizedError();
+  }
+
+  const updatedCardData = { isBlocked: true };
+  await cardRepository.update(cardId, updatedCardData);
+}
+
+export async function unblockCard(
+  cardId: number,
+  inputPassword: string,
+  isBlockedStatus: boolean,
+  cardPassword: string
+) {
+  if (!isBlockedStatus) {
+    throw badRequestError();
+  }
+
+  if (!bcrypt.compareSync(inputPassword, cardPassword)) {
+    throw unauthorizedError();
+  }
+
+  const updatedCardData = { isBlocked: false };
+  await cardRepository.update(cardId, updatedCardData);
+}
+
+export async function getCardStatement(cardId: number) {
+  const card = await checkIfCardExists(cardId);
+
+  const payments = await paymentRepository.findByCardId(cardId);
+  const recharges = await rechargeRepository.findByCardId(cardId);
+
+  const balance = calcBalance(payments, recharges);
+
+  const cardStatement = {
+    balance,
+    transactions: payments,
+    recharges
+  };
+
+  return cardStatement;
+}
+
+export async function verifyCard(cardId: number, employeeId: number) {
+  const card = await checkIfCardExists(cardId);
+  checkIfCardExpired(card.expirationDate);
+  checkCardOwner(employeeId, card.employeeId);
+  return card;
+}
+
+export async function checkIfCardExists(cardId: number) {
   const card = await cardRepository.findById(cardId);
 
   if (!card) {
     throw notFoundError();
   }
 
-  if (isExpiredCard(card.expirationDate)) {
-    throw badRequestError();
-  }
-
-  if (card.isBlocked) {
-    throw badRequestError();
-  }
-
-  if (card.employeeId !== employeeId) {
-    throw unauthorizedError();
-  }
-  return { isBlockedStatus: card.isBlocked, hashedPassword: card.password };
+  return card;
 }
 
-export async function checkCardUnblockPossibility(
-  cardId: number,
-  employeeId: number
-) {
-  const card = await cardRepository.findById(cardId);
-  if (!card) {
-    throw notFoundError();
-  }
+export function checkIfCardExpired(expirationDate: string) {
+  const currentDate = dayjs().locale("pt-br").format("MM/YY");
+  const isExpired = dayjs(currentDate).isAfter(expirationDate);
 
-  if (isExpiredCard(card.expirationDate)) {
+  if (isExpired) {
     throw badRequestError();
   }
-
-  if (!card.isBlocked) {
-    throw badRequestError();
-  }
-  if (card.employeeId !== employeeId) {
-    throw unauthorizedError();
-  }
-
-  return { isBlockedStatus: card.isBlocked, hashedPassword: card.password };
 }
 
-export async function toggleIsBlockedStatus(
-  cardId: number,
-  password: string,
-  isBlocked: boolean,
-  hashedPassword: string
-) {
-  if (!bcrypt.compareSync(password, hashedPassword)) {
+export function checkCardOwner(employeeId: number, cardEmployeeId: number) {
+  if (employeeId !== cardEmployeeId) {
     throw unauthorizedError();
   }
-  if (isBlocked) {
-    const updatedCardData = { isBlocked: false };
-    await cardRepository.update(cardId, updatedCardData);
-  } else if (!isBlocked) {
-    const updatedCardData = { isBlocked: true };
-    await cardRepository.update(cardId, updatedCardData);
+}
+
+export function checkIfCardIsActivated(password: string) {
+  if (password === null) {
+    throw unauthorizedError();
   }
 }
 
 function generateCardNumber(): string {
-  const number = faker.finance.creditCardNumber();
-  return number;
+  const cardNumber = faker.finance.creditCardNumber();
+  return cardNumber;
 }
 
 function formatCardHolderName(fullName: string): string {
@@ -207,15 +217,18 @@ function calcExpirationDate(currentYear: string) {
   return parseInt(currentYear) + expirationGap;
 }
 
-function isExpiredCard(expirationDate: string): boolean {
-  const currentDate = dayjs().locale("pt-br").format("MM/YY");
-  const isExpired = dayjs(currentDate).isAfter(expirationDate);
-  console.log(isExpired);
-  return isExpired;
-}
-
 function hashPassword(password: string) {
   const hashSalt = 10;
   const hashedPassword = bcrypt.hashSync(password, hashSalt);
   return hashedPassword;
+}
+
+function calcBalance(payments: any[], recharges: any[]): number {
+  let paymentsTotal = 0;
+  let rechargesTotal = 0;
+
+  payments.forEach(payment => (paymentsTotal += payment.amount));
+  recharges.forEach(recharge => (rechargesTotal += recharge.amount));
+
+  return rechargesTotal - paymentsTotal;
 }
