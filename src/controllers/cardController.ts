@@ -24,11 +24,6 @@ export async function activateCard(req: Request, res: Response) {
 
   const card = await cardsService.verifyCard(cardId, employeeId);
 
-  // await cardsService.checkIfCardIsAbleToActivate(
-  //   cardId,
-  //   employeeId,
-  //   inputSecurityCode
-  // );
   await cardsService.activateCard(
     inputPassword,
     cardId,
