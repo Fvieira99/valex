@@ -1,15 +1,18 @@
 import {
   checkIfCardExists,
   checkIfCardExpired,
-  checkIfCardIsActivated
+  cardIsActivated
 } from "../services/cardService.js";
 
 import * as rechargeRepository from "../repositories/rechargeRepository.js";
+import { unauthorizedError } from "../middlewares/errorHandlerMiddleware.js";
 
 export async function verifyCard(cardId: number) {
   const card = await checkIfCardExists(cardId);
   checkIfCardExpired(card.expirationDate);
-  checkIfCardIsActivated(card.password);
+  if (!cardIsActivated(card.password)) {
+    throw unauthorizedError();
+  }
   return card;
 }
 

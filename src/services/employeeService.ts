@@ -5,7 +5,7 @@ import {
 import * as employeeRepository from "../repositories/employeeRepository.js";
 import * as companyRepository from "../repositories/companyRepository.js";
 
-export async function checkEmployeeAndCompany(
+export async function verifyEmployeeAndCompany(
   employeeId: number,
   apiKey: string
 ) {

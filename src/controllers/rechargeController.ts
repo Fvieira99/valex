@@ -6,7 +6,7 @@ export async function recharge(req: Request, res: Response) {
   const { cardId, amount } = req.body;
   const apiKey = res.locals.apiKey;
   const card = await rechargeService.verifyCard(cardId);
-  await employeeService.checkEmployeeAndCompany(card.employeeId, apiKey);
+  await employeeService.verifyEmployeeAndCompany(card.employeeId, apiKey);
   await rechargeService.recharge(cardId, amount);
 
   res.sendStatus(200);

@@ -10,7 +10,7 @@ export async function createCard(req: Request, res: Response) {
   }: { employeeId: number; cardType: TransactionTypes } = req.body;
   const apiKey = res.locals.apiKey;
 
-  const fullEmployeeName = await employeeService.checkEmployeeAndCompany(
+  const fullEmployeeName = await employeeService.verifyEmployeeAndCompany(
     employeeId,
     apiKey
   );

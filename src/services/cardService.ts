@@ -66,7 +66,7 @@ export async function activateCard(
   cardPassword: string,
   CardSecurityCode: string
 ) {
-  if (cardPassword !== null) {
+  if (cardIsActivated(cardPassword)) {
     throw badRequestError();
   }
 
@@ -166,14 +166,26 @@ export function checkIfCardExpired(expirationDate: string) {
 
 export function checkCardOwner(employeeId: number, cardEmployeeId: number) {
   if (employeeId !== cardEmployeeId) {
+    console.log("eu");
     throw unauthorizedError();
   }
 }
 
-export function checkIfCardIsActivated(password: string) {
+export function cardIsActivated(password: string) {
   if (password === null) {
-    throw unauthorizedError();
+    return false;
   }
+  return true;
+}
+
+export function calcBalance(payments: any[], recharges: any[]): number {
+  let paymentsTotal = 0;
+  let rechargesTotal = 0;
+
+  payments.forEach(payment => (paymentsTotal += payment.amount));
+  recharges.forEach(recharge => (rechargesTotal += recharge.amount));
+
+  return rechargesTotal - paymentsTotal;
 }
 
 function generateCardNumber(): string {
@@ -221,14 +233,4 @@ function hashPassword(password: string) {
   const hashSalt = 10;
   const hashedPassword = bcrypt.hashSync(password, hashSalt);
   return hashedPassword;
-}
-
-function calcBalance(payments: any[], recharges: any[]): number {
-  let paymentsTotal = 0;
-  let rechargesTotal = 0;
-
-  payments.forEach(payment => (paymentsTotal += payment.amount));
-  recharges.forEach(recharge => (rechargesTotal += recharge.amount));
-
-  return rechargesTotal - paymentsTotal;
 }
