@@ -15,8 +15,13 @@ export async function createCard(req: Request, res: Response) {
     apiKey
   );
   await cardsService.checkIfEmployeeHasCardType(employeeId, cardType);
-  await cardsService.createCard(fullEmployeeName, cardType, employeeId);
-  res.sendStatus(201);
+  const securityCode = await cardsService.createCard(
+    fullEmployeeName,
+    cardType,
+    employeeId
+  );
+  //Returning security code for test purposes
+  res.status(201).send(`Save card security code: ${securityCode}`);
 }
 
 export async function activateCard(req: Request, res: Response) {
@@ -63,7 +68,6 @@ export async function unblockCard(req: Request, res: Response) {
 }
 
 export async function getCardStatement(req: Request, res: Response) {
-  //caso a aplicação tenha um sistema de login -> usar o employeeId para verificar o cartão.
   const { cardId } = req.params;
 
   const cardStatement = await cardsService.getCardStatement(parseInt(cardId));

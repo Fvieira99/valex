@@ -41,13 +41,13 @@ export async function createCard(
   const cardNumber = generateCardNumber();
   const cardholderName = formatCardHolderName(fullName);
   const expirationDate = generateFormatedExpirationDate();
-  const securityCode = encryptCardSecurityCode();
+  const [securityCode, encryptedSecurityCode] = encryptCardSecurityCode();
 
   const newCardData = {
     employeeId,
     number: cardNumber,
     cardholderName,
-    securityCode,
+    securityCode: encryptedSecurityCode,
     expirationDate,
     password: null,
     isVirtual: false,
@@ -57,6 +57,7 @@ export async function createCard(
   };
 
   await cardRepository.insert(newCardData);
+  return securityCode;
 }
 export async function activateCard(
   inputPassword: string,
@@ -70,7 +71,7 @@ export async function activateCard(
   }
 
   const decryptedSecurityCode = cryptr.decrypt(CardSecurityCode);
-  // console.log(decryptedSecurityCode);
+  console.log(decryptedSecurityCode);
   if (decryptedSecurityCode !== inputSecurityCode) {
     throw unauthorizedError();
   }
@@ -217,10 +218,10 @@ function generateFormatedExpirationDate(): string {
   return formatedExpirationDate;
 }
 
-function encryptCardSecurityCode(): string {
+function encryptCardSecurityCode(): string[] {
   const securityCode = faker.finance.creditCardCVV();
   const encryptedSecurityCode = cryptr.encrypt(securityCode);
-  return encryptedSecurityCode;
+  return [securityCode, encryptedSecurityCode];
 }
 
 function calcExpirationDate(currentYear: string) {

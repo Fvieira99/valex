@@ -5,7 +5,7 @@ const createCardSchema = joi.object({
   cardType: joi
     .string()
     .required()
-    .valid("groceries", "restaurants", "transport", "education", "health")
+    .valid("groceries", "restaurant", "transport", "education", "health")
 });
 
 export default createCardSchema;
