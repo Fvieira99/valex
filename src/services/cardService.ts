@@ -1,7 +1,6 @@
 import {
   badRequestError,
   conflictError,
-  forbiddenError,
   notFoundError,
   unauthorizedError
 } from "../middlewares/errorHandlerMiddleware.js";
