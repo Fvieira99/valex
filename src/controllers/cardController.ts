@@ -36,7 +36,7 @@ export async function activateCard(req: Request, res: Response) {
     card.password,
     card.securityCode
   );
-  res.sendStatus(200);
+  res.status(200).send("Card Activated!");
 }
 
 export async function blockCard(req: Request, res: Response) {
@@ -50,7 +50,7 @@ export async function blockCard(req: Request, res: Response) {
     card.password
   );
 
-  res.sendStatus(200);
+  res.status(200).send("Card Blocked!");
 }
 
 export async function unblockCard(req: Request, res: Response) {
@@ -64,7 +64,7 @@ export async function unblockCard(req: Request, res: Response) {
     card.password
   );
 
-  res.sendStatus(200);
+  res.status(200).send("Card Unblocked!");
 }
 
 export async function getCardStatement(req: Request, res: Response) {

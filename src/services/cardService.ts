@@ -71,7 +71,6 @@ export async function activateCard(
   }
 
   const decryptedSecurityCode = cryptr.decrypt(CardSecurityCode);
-  console.log(decryptedSecurityCode);
   if (decryptedSecurityCode !== inputSecurityCode) {
     throw unauthorizedError();
   }
@@ -166,7 +165,6 @@ export function checkIfCardExpired(expirationDate: string) {
 
 export function checkCardOwner(employeeId: number, cardEmployeeId: number) {
   if (employeeId !== cardEmployeeId) {
-    console.log("eu");
     throw unauthorizedError();
   }
 }
