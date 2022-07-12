@@ -49,7 +49,7 @@ API:
 
 
 - GET /cards/:cardId/statement
-    - Rota para listar o extrato de um cartão. Mostrando as transações, as recargas e um saldo.
+    - Rota para listar o extrato de um cartão. Mostrando as transações, as recargas e o saldo.
     - Passar o Id do cartão por params.
 
 
