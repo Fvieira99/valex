@@ -1,7 +1,7 @@
 ## Usage
 
 ```bash
-$ git clone https://github.com/$username-github/$nome-repositorio
+$ git clone https://github.com/Fvieira99/valex.git
 
 $ cd $nome-repositorio
 
