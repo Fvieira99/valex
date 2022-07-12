@@ -23,7 +23,7 @@ API:
         "cardType": "transport" | "groceries" | "education" | "health" | "restaurant"
     }
     - Para facilitar os testes, após a criação de um cartão o CVC é retornado. Guarde-o para utilizar nas outras rotas
-
+    - Ao criar um cartão o id começará em 2 para o primeiro cartão criado, 3 para o segundo e assim por diante. Utilize esse id nas próximas rotas. 
 
 - PUT /cards/activate
     - Rota para ativar um cartão
