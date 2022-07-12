@@ -57,7 +57,7 @@ export async function createCard(
   };
 
   await cardRepository.insert(newCardData);
-  return securityCode;
+  return [securityCode];
 }
 export async function activateCard(
   inputPassword: string,
